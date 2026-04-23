@@ -50,3 +50,4 @@ next-env.d.ts
 
 # Frontend vercel
 .vercel
+archive/backend/.venv/
