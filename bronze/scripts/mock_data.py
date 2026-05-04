@@ -1,6 +1,5 @@
 import ollama
 import json
-import random
 
 MOCK_BUSINESSES = [
     {
@@ -35,52 +34,66 @@ MOCK_BUSINESSES = [
     },
 ]
 
-def generate_mock_reviews(business_name: str, business_type: str, n: int = 30) -> list[dict]:
-    """Use local Ollama llama3.2 to generate realistic mock reviews."""
+def generate_batch(business_name: str, business_type: str, count: int, sentiment: str) -> list[str]:
+    """Generate a single small batch of reviews using structured JSON output."""
+    prompt = f"""Generate exactly {count} Google Maps reviews for a {business_type} called "{business_name}" in San Francisco.
 
-    # distribute sentiment realistically
-    n_positive = int(n * 0.5)
-    n_neutral = int(n * 0.3)
-    n_negative = n - n_positive - n_neutral
+- Sentiment: {sentiment}
+- Max 30 words per review
+- Sound like real people wrote them
+- Mention specific details like food items, service, or prices
 
-    prompt = f"""Generate {n} realistic Google Maps customer reviews for a {business_type} called "{business_name}" located in San Francisco.
-
-Requirements:
-- {n_positive} positive reviews (happy customers)
-- {n_neutral} neutral reviews (mixed feelings)
-- {n_negative} negative reviews (unhappy customers)
-- Each review should sound like a real person wrote it
-- Vary the length and writing style (some short, some detailed)
-- Reference specific things like food, service, atmosphere, wait times, prices
-- Do not number the reviews or add labels like "Positive:" or "Negative:"
-
-Return ONLY a JSON array of strings, one string per review, no other text.
-Example format: ["review one here", "review two here"]"""
-
-    print(f"🤖 Generating {n} reviews for {business_name} via Ollama...")
+Return a JSON object with a single key "reviews" containing an array of {count} review strings."""
 
     response = ollama.generate(
         model="llama3.2",
         prompt=prompt,
-        options={"temperature": 0.9}  # higher temp = more varied output
+        format="json",  # forces valid JSON output
+        options={
+            "temperature": 0.9,
+            "num_predict": 512
+        }
     )
 
     raw = response["response"].strip()
+    parsed = json.loads(raw)
+    
+    # extract reviews array from the object
+    return parsed.get("reviews", [])
 
-    # parse the JSON array from the response
-    try:
-        # handle cases where model wraps response in markdown code blocks
-        if "```" in raw:
-            raw = raw.split("```")[1]
-            if raw.startswith("json"):
-                raw = raw[4:]
+def generate_mock_reviews(business_name: str, business_type: str, n: int = 30) -> list[dict]:
+    """Generate reviews in small batches of 5 to avoid truncation."""
 
-        reviews = json.loads(raw)
-        print(f"✅ Generated {len(reviews)} reviews for {business_name}")
-        return [{"review_text": r} for r in reviews]
+    all_reviews = []
+    batch_size = 5
 
-    except json.JSONDecodeError as e:
-        print(f"⚠️  Failed to parse Ollama response for {business_name}: {e}")
-        print(f"Raw response: {raw[:200]}...")
-        # fall back to empty list - ingest.py handles this gracefully
-        return []
+    n_positive = int(n * 0.5)
+    n_neutral = int(n * 0.3)
+    n_negative = n - n_positive - n_neutral
+
+    batches = [
+        (n_positive, "positive"),
+        (n_neutral, "neutral"),
+        (n_negative, "negative"),
+    ]
+
+    for total_count, sentiment in batches:
+        # break each sentiment into chunks of batch_size
+        remaining = total_count
+        while remaining > 0:
+            chunk = min(batch_size, remaining)
+            print(f"🤖 Generating {chunk} {sentiment} reviews for {business_name}...")
+
+            try:
+                reviews = generate_batch(business_name, business_type, chunk, sentiment)
+                all_reviews.extend([{"review_text": r} for r in reviews])
+                print(f"✅ Got {len(reviews)} {sentiment} reviews")
+                remaining -= chunk
+
+            except json.JSONDecodeError as e:
+                print(f"⚠️  Parse failed for {business_name} ({sentiment} batch): {e}")
+                remaining -= chunk  # skip failed batch and continue
+                continue
+
+    print(f"✅ Total reviews generated for {business_name}: {len(all_reviews)}")
+    return all_reviews

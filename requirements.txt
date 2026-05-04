@@ -12,8 +12,10 @@ httpcore==1.0.9
 httpx==0.28.1
 idna==3.13
 jmespath==1.1.0
+numpy==2.4.4
 ollama==0.6.2
 outscraper==6.0.2
+pandas==3.0.2
 pyarrow==24.0.0
 pydantic==2.13.3
 pydantic_core==2.46.3
