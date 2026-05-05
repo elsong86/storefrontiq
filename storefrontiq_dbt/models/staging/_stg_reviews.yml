@@ -1,0 +1,34 @@
+version: 2
+
+models:
+  - name: stg_reviews
+    description: "Cleaned and sentiment-scored reviews from S3 Silver layer"
+    columns:
+      - name: ingestion_id
+        description: "Unique identifier per review ingestion"
+        tests:
+          - unique
+          - not_null
+      - name: place_id
+        description: "Google Place ID for the business"
+        tests:
+          - not_null
+      - name: business_name
+        description: "Display name of the business"
+        tests:
+          - not_null
+      - name: sentiment_score
+        description: "Sentiment score from 0 (very negative) to 10 (very positive)"
+        tests:
+          - not_null
+      - name: sentiment_label
+        description: "Categorical sentiment label"
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['positive', 'neutral', 'negative']
+      - name: cleaned_text
+        description: "Review text after cleaning"
+        tests:
+          - not_null

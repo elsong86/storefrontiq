@@ -1,0 +1,10 @@
+version: 2
+
+sources:
+  - name: silver
+    description: "Silver layer Delta tables registered as Snowflake external tables"
+    database: STOREFRONTIQ
+    schema: STAGING
+    tables:
+      - name: silver_reviews_ext
+        description: "Cleaned and sentiment-scored reviews from S3"

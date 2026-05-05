@@ -1,0 +1,22 @@
+version: 2
+
+models:
+  - name: fct_weekly_business_sentiment
+    description: "Weekly aggregated sentiment metrics per business"
+    columns:
+      - name: place_id
+        tests:
+          - not_null
+      - name: business_name
+        tests:
+          - not_null
+      - name: week_start
+        tests:
+          - not_null
+      - name: total_reviews
+        description: "Total review count for the week"
+        tests:
+          - not_null
+      - name: avg_sentiment_score
+        tests:
+          - not_null

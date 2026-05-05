@@ -61,6 +61,7 @@ Return a JSON object with a single key "reviews" containing an array of {count} 
     # extract reviews array from the object
     return parsed.get("reviews", [])
 
+
 def generate_mock_reviews(business_name: str, business_type: str, n: int = 30) -> list[dict]:
     """Generate reviews in small batches of 5 to avoid truncation."""
 
